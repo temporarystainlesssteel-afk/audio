@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+<title>strayindex revision</title>
+
+<style>
+:root{
+ --bg:#f5f7f9;
+ --text:#1f2937;
+ --card:#ffffff;
+ --accent:#22c55e;
+}
+
+body.dark{
+ --bg:#111827;
+ --text:#e5e7eb;
+ --card:#1f2937;
+}
+
+body{
+ margin:0;
+ font-family:"Inter",sans-serif;
+ background:var(--bg);
+ color:var(--text);
+}
+
+header{
+ display:flex;
+ justify-content:space-between;
+ padding:15px 25px;
+ border-bottom:1px solid #ddd;
+}
+
+.logo{
+ font-weight:600;
+ color:var(--accent);
+}
+
+.switch{
+ width:50px;height:24px;background:#ccc;border-radius:20px;
+ cursor:pointer;position:relative;
+}
+.switch::after{
+ content:"";
+ width:20px;height:20px;background:white;border-radius:50%;
+ position:absolute;top:2px;left:2px;
+ transition:.3s;
+}
+body.dark .switch{background:var(--accent);}
+body.dark .switch::after{left:28px}
+
+nav{
+ padding:10px 25px;
+ border-bottom:1px solid #ddd;
+}
+nav a{
+ margin-right:20px;
+ cursor:pointer;
+ font-weight:600;
+}
+nav a.active{
+ color:var(--accent);
+ border-bottom:2px solid var(--accent);
+}
+
+.container{
+ max-width:1000px;
+ margin:auto;
+ padding:25px;
+}
+
+.card{
+ background:var(--card);
+ padding:22px;
+ border-radius:14px;
+ margin-bottom:20px;
+ box-shadow:0 4px 12px rgba(0,0,0,0.06);
+}
+
+.startBtn{
+ background:var(--accent);
+ color:white;
+ border:none;
+ padding:12px;
+ border-radius:10px;
+ cursor:pointer;
+ font-weight:600;
+}
+
+.quiz button{
+ width:100%;
+ margin:6px 0;
+ padding:10px;
+ border:none;
+ border-radius:8px;
+ background:#e5e7eb;
+ cursor:pointer;
+}
+
+.correct{background:#22c55e!important;color:white;}
+.wrong{background:#ef4444!important;color:white;}
+
+footer{
+ text-align:center;
+ padding:20px;
+ font-size:12px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="logo">strayindex</div>
+<div class="switch" onclick="toggleMode()"></div>
+</header>
+
+<nav>
+<a onclick="switchTab(event,'cs')" class="active">Computer Science</a>
+<a onclick="switchTab(event,'math')">Maths</a>
+<a onclick="switchTab(event,'bio')">Biology</a>
+<a onclick="switchTab(event,'eng')">English</a>
+<a onclick="switchTab(event,'bus')">Business</a>
+</nav>
+
+<div class="container" id="content"></div>
+
+<footer>made by strayindex</footer>
+
+<audio id="player"></audio>
+
+<script>
+const content=document.getElementById("content");
+const player=document.getElementById("player");
+
+/* quiz */
+function startQuiz(qs){
+ let i=0,score=0;
+ function showQ(){
+  if(i>=qs.length){
+   content.innerHTML=`<div class="card"><h2>Score: ${score}/${qs.length}</h2></div>`;
+   return;
+  }
+  let q=qs[i];
+  content.innerHTML=`
+  <div class="card quiz">
+  <h2>${q.q}</h2>
+  ${q.a.map(a=>`<button>${a[0]}</button>`).join("")}
+  </div>`;
+  document.querySelectorAll(".quiz button").forEach((b,idx)=>{
+    b.onclick=()=>{
+      if(q.a[idx][1]){b.classList.add("correct");score++;}
+      else b.classList.add("wrong");
+      setTimeout(()=>{i++;showQ();},1000);
+    };
+  });
+ }
+ showQ();
+}
+
+/* audio */
+function playMusic(src){
+ player.pause();
+ player.currentTime = 0;
+ player.src = src;
+ player.play();
+}
+
+function stopMusic(){
+ player.pause();
+ player.currentTime = 0;
+}
+
+/* ✅ REPLACED SWITCH TAB */
+function switchTab(e,tab){
+ document.querySelectorAll("nav a").forEach(a=>a.classList.remove("active"));
+ e.target.classList.add("active");
+
+/* CS */
+if(tab==="cs"){
+content.innerHTML=`
+<h1>Computer Science</h1>
+<div class="card">
+<p><b>Binary</b><br>Binary is the fundamental language that all computers use to store and process information. Instead of using the numbers 0–9 like humans do, computers only use two digits: 0 and 1. Each binary digit (bit) represents an electrical signal that is either off (0) or on (1).</p>
+
+<p><b>Algorithms</b><br>An algorithm is a clear, step‑by‑step method for solving a problem or completing a task. It must be written in a way that leaves no confusion.</p>
+
+<p><b>Variables</b><br>Variables are named storage locations in a program that hold information and can change during execution.</p>
+
+<p><b>Selection</b><br>Selection allows programs to make decisions using IF, ELSE IF, and ELSE statements.</p>
+</div>
+
+<button class="startBtn" onclick='startQuiz([
+{q:"Binary uses which digits?",a:[["0 and 1",true],["1–9",false]]},
+{q:"What is an algorithm?",a:[["Step-by-step method",true],["Random process",false]]},
+{q:"What stores data in programs?",a:[["Variables",true],["CPU",false]]},
+{q:"Selection uses?",a:[["IF statements",true],["Loops only",false]]}
+])'>Start Quiz</button>`;
+}
+
+/* MATHS */
+if(tab==="math"){
+content.innerHTML=`
+<h1>Maths</h1>
+<div class="card">
+<p><b>Fractions</b><br>Fractions represent parts of a whole and use a numerator and denominator.</p>
+
+<p><b>Solving Equations</b><br>Use inverse operations to isolate the variable while keeping balance.</p>
+
+<p><b>Coordinates</b><br>Coordinates show positions using x and y values on a grid.</p>
+
+<p><b>Percentages</b><br>Percentages show values out of 100.</p>
+</div>
+
+<button class="startBtn" onclick='startQuiz([
+{q:"Fractions represent?",a:[["Parts of a whole",true],["Whole numbers only",false]]},
+{q:"Solve equations using?",a:[["Inverse operations",true],["Guessing",false]]},
+{q:"Coordinates show?",a:[["Position",true],["Colour",false]]},
+{q:"Percent means?",a:[["Out of 100",true],["Out of 10",false]]}
+])'>Start Quiz</button>`;
+}
+
+/* BIO */
+if(tab==="bio"){
+content.innerHTML=`
+<h1>Biology</h1>
+<div class="card">
+<p><b>Cells</b><br>Cells are the basic building blocks of all living organisms.</p>
+
+<p><b>Diffusion</b><br>Movement from high to low concentration without energy.</p>
+
+<p><b>Osmosis</b><br>Movement of water across a partially permeable membrane.</p>
+
+<p><b>Enzymes</b><br>Enzymes speed up chemical reactions.</p>
+</div>
+
+<button class="startBtn" onclick='startQuiz([
+{q:"Cells are?",a:[["Basic units of life",true],["Energy packets",false]]},
+{q:"Diffusion moves?",a:[["High to low",true],["Low to high",false]]},
+{q:"Osmosis moves?",a:[["Water",true],["Oxygen",false]]},
+{q:"Enzymes do?",a:[["Speed reactions",true],["Slow reactions",false]]}
+])'>Start Quiz</button>`;
+}
+
+/* ENG */
+if(tab==="eng"){
+content.innerHTML=`
+<h1>English</h1>
+<div class="card">
+<p><b>Nouns</b><br>Nouns name people, places, objects, or ideas.</p>
+
+<p><b>Similes</b><br>Compare using like or as.</p>
+
+<p><b>Themes</b><br>Deeper meanings in a story.</p>
+
+<p><b>Narrative Structure</b><br>Beginning, middle, climax, and resolution.</p>
+</div>
+
+<button class="startBtn" onclick='startQuiz([
+{q:"Nouns are?",a:[["Naming words",true],["Action words",false]]},
+{q:"Similes use?",a:[["Like/as",true],["Is",false]]},
+{q:"Themes are?",a:[["Deeper ideas",true],["Titles",false]]},
+{q:"Structure includes?",a:[["Climax",true],["Alphabet",false]]}
+])'>Start Quiz</button>`;
+}
+
+/* BUSINESS */
+if(tab==="bus"){
+content.innerHTML=`
+<h1>Business</h1>
+<div class="card">
+<p><b>Entrepreneurs</b><br>People who start and run businesses.</p>
+
+<p><b>Revenue</b><br>Total money earned before costs.</p>
+
+<p><b>Profit</b><br>Revenue minus costs.</p>
+
+<p><b>Market Research</b><br>Collecting information about customers and markets.</p>
+</div>
+
+<button class="startBtn" onclick='startQuiz([
+{q:"Entrepreneurs do?",a:[["Start businesses",true],["Spend money",false]]},
+{q:"Revenue is?",a:[["Total income",true],["Profit",false]]},
+{q:"Profit equals?",a:[["Revenue - costs",true],["Costs - revenue",false]]},
+{q:"Market research?",a:[["Collect info",true],["Ignore data",false]]}
+])'>Start Quiz</button>`;
+}
+}
+
+function toggleMode(){
+ document.body.classList.toggle("dark");
+}
+
+document.addEventListener("keydown", e=>{
+ let k=e.key.toLowerCase();
+ if(e.shiftKey && k==="x") playMusic("music1.mp3");
+ if(e.shiftKey && k==="z") playMusic("music2.mp3");
+ if(e.shiftKey && k==="c") playMusic("music3.mp3");
+ if(e.shiftKey && k==="v") playMusic("music4.mp3");
+ if(e.shiftKey && k==="b") playMusic("music5.mp3");
+});
+
+switchTab({target:document.querySelector("nav a")},"cs");
+</script>
+
+<button onclick="stopMusic()" style="
+ position:fixed;
+ bottom:10px;
+ left:10px;
+ opacity:0.15;
+ font-size:10px;
+ background:#ef4444;
+ color:white;
+ border:none;
+ padding:6px 10px;
+ border-radius:6px;
+ cursor:pointer;
+">
+ STOP
+</button>
+
+</body>
+</html>
