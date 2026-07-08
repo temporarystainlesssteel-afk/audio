@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
 <meta charset="UTF-8">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 
@@ -167,7 +168,8 @@ footer{
 
 <div class="container" id="content"></div>
 
-<footer>made by strayindex</footer>
+<!-- Stealth status dot added to footer -->
+<footer>made by strayindex <span id="stealthDot" style="display:inline-block; width:5px; height:5px; border-radius:50%; background:#7f8c8d; margin-left:6px; opacity:0.15; transition:0.3s;"></span></footer>
 
 <audio id="player"></audio>
 
@@ -175,7 +177,7 @@ footer{
 const content=document.getElementById("content");
 const player=document.getElementById("player");
 
-let audioUnlocked = false; // Closed/locked state by default
+let audioUnlocked = false; // Locked by default
 
 /* Load saved dark mode preference */
 if (localStorage.getItem("dark_mode") === "enabled") {
@@ -282,6 +284,20 @@ async function askAI() {
  } catch (error) {
    output.innerHTML = "<span style='color:#ef4444;'><strong>Connection Error:</strong> " + error.message + "<br><br>This can happen if you are offline, or if your local network blocks requests to Google's API endpoints.</span>";
  }
+}
+
+/* Update stealth visual status indicator */
+function updateStealthIndicator() {
+  const dot = document.getElementById("stealthDot");
+  if (dot) {
+    if (audioUnlocked) {
+      dot.style.background = "#22c55e"; // Discrete green dot
+      dot.style.opacity = "0.8";
+    } else {
+      dot.style.background = "#7f8c8d"; // Normal gray
+      dot.style.opacity = "0.15";
+    }
+  }
 }
 
 /* ✅ REPLACED SWITCH TAB */
@@ -623,9 +639,14 @@ document.addEventListener("keydown", e=>{
  
  let k=e.key.toLowerCase();
  
- /* Secret Stealth Unlock Hotkey (Ctrl + Shift + Alt + A) */
- if(e.ctrlKey && e.shiftKey && e.altKey && k === "a"){
+ /* 
+   Secret Stealth Unlock Hotkeys:
+   Press "Ctrl + Alt + Space" OR "Shift + Alt + Space" simultaneously
+ */
+ if((e.ctrlKey && e.altKey && e.code === "Space") || (e.shiftKey && e.altKey && e.code === "Space")){
+   e.preventDefault(); // Prevent standard browser scroll behavior on Space
    audioUnlocked = !audioUnlocked;
+   updateStealthIndicator();
    return;
  }
  
