@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 
 <title>strayindex revision</title>
@@ -56,11 +55,14 @@ body.dark .switch::after{left:28px}
 nav{
  padding:10px 25px;
  border-bottom:1px solid #ddd;
+ display: flex;
+ flex-wrap: wrap;
+ gap: 10px;
 }
 nav a{
- margin-right:20px;
  cursor:pointer;
  font-weight:600;
+ padding-bottom: 5px;
 }
 nav a.active{
  color:var(--accent);
@@ -79,6 +81,26 @@ nav a.active{
  border-radius:14px;
  margin-bottom:20px;
  box-shadow:0 4px 12px rgba(0,0,0,0.06);
+}
+
+.card h2 {
+ margin-top: 0;
+ color: var(--accent);
+}
+
+.card h3 {
+ margin-top: 20px;
+ margin-bottom: 8px;
+ border-left: 3px solid var(--accent);
+ padding-left: 8px;
+}
+
+.card ul {
+ padding-left: 20px;
+}
+
+.card li {
+ margin-bottom: 6px;
 }
 
 .startBtn{
@@ -104,6 +126,21 @@ nav a.active{
 .correct{background:#22c55e!important;color:white;}
 .wrong{background:#ef4444!important;color:white;}
 
+/* Styles for AI Tutor Tab */
+input, textarea {
+ background: var(--card);
+ color: var(--text);
+ border: 1px solid #ddd;
+ padding: 10px;
+ border-radius: 8px;
+ font-family: inherit;
+ width: 100%;
+ box-sizing: border-box;
+}
+body.dark input, body.dark textarea {
+ border-color: #4b5563;
+}
+
 footer{
  text-align:center;
  padding:20px;
@@ -125,6 +162,7 @@ footer{
 <a onclick="switchTab(event,'bio')">Biology</a>
 <a onclick="switchTab(event,'eng')">English</a>
 <a onclick="switchTab(event,'bus')">Business</a>
+<a onclick="switchTab(event,'ai')">AI Tutor</a>
 </nav>
 
 <div class="container" id="content"></div>
@@ -136,6 +174,13 @@ footer{
 <script>
 const content=document.getElementById("content");
 const player=document.getElementById("player");
+
+let audioUnlocked = false; // Closed/locked state by default
+
+/* Load saved dark mode preference */
+if (localStorage.getItem("dark_mode") === "enabled") {
+  document.body.classList.add("dark");
+}
 
 /* quiz */
 function startQuiz(qs){
@@ -175,6 +220,70 @@ function stopMusic(){
  player.currentTime = 0;
 }
 
+/* Gemini API Integration */
+async function askAI() {
+ const apiKey = document.getElementById("apiKey").value.trim();
+ const prompt = document.getElementById("aiPrompt").value.trim();
+ const output = document.getElementById("aiResponse");
+
+ if (!apiKey) {
+   alert("Please enter a valid Gemini API key.");
+   return;
+ }
+ if (!prompt) {
+   alert("Please enter a question.");
+   return;
+ }
+
+ localStorage.setItem("gemini_api_key", apiKey);
+ output.innerHTML = "Thinking...";
+
+ try {
+   // Uses active gemini-3.5-flash model
+   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`, {
+     method: "POST",
+     headers: {
+       "Content-Type": "application/json"
+     },
+     body: JSON.stringify({
+       contents: [
+         {
+           parts: [
+             {
+               text: "You are an expert GCSE tutor. Answer the user's GCSE-related study question clearly, structured, and concisely using simple language: " + prompt
+             }
+           ]
+         }
+       ]
+     })
+   });
+
+   const data = await response.json();
+   
+   if (!response.ok) {
+     const errMsg = data.error ? data.error.message : "Unknown API error";
+     output.innerHTML = `<span style='color:#ef4444;'><strong>API Error (${response.status}):</strong> ${errMsg}<br><br><em>Note: If you are using a new "AQ." key, verify that you copied the complete key text and that your Google AI Studio account matches the appropriate region rules.</em></span>`;
+     return;
+   }
+
+   if (data.candidates && data.candidates[0].content.parts[0].text) {
+     let text = data.candidates[0].content.parts[0].text;
+     text = text
+       .replace(/&/g, "&amp;")
+       .replace(/</g, "&lt;")
+       .replace(/>/g, "&gt;")
+       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+       .replace(/\*(.*?)\*/g, "<em>$1</em>")
+       .replace(/\n/g, "<br>");
+     output.innerHTML = text;
+   } else {
+     output.innerHTML = "<span style='color:#ef4444;'>Failed to parse the response format from Google's servers.</span>";
+   }
+ } catch (error) {
+   output.innerHTML = "<span style='color:#ef4444;'><strong>Connection Error:</strong> " + error.message + "<br><br>This can happen if you are offline, or if your local network blocks requests to Google's API endpoints.</span>";
+ }
+}
+
 /* ✅ REPLACED SWITCH TAB */
 function switchTab(e,tab){
  document.querySelectorAll("nav a").forEach(a=>a.classList.remove("active"));
@@ -185,20 +294,51 @@ if(tab==="cs"){
 content.innerHTML=`
 <h1>Computer Science</h1>
 <div class="card">
-<p><b>Binary</b><br>Binary is the fundamental language that all computers use to store and process information. Instead of using the numbers 0–9 like humans do, computers only use two digits: 0 and 1. Each binary digit (bit) represents an electrical signal that is either off (0) or on (1).</p>
+ <h2>GCSE Syllabus Overview</h2>
+ <p>Computer Science covers how computer architecture processes logic, stores information, communicates over networks, and relies on computational design to resolve complex operations.</p>
+ 
+ <h3>1. Data Representation & Binary Conversion</h3>
+ <p>All operations rely on processing binary values (represented on/off electrically via 1 and 0). Data formats require standard structures:</p>
+ <ul>
+  <li><strong>Bits and Bytes:</strong> 1 byte = 8 bits, 1 kilobyte (KB) = 1000 bytes, 1 megabyte (MB) = 1000 KB.</li>
+  <li><strong>Denary to Binary Conversion:</strong> Represent values using place columns (128, 64, 32, 16, 8, 4, 2, 1). To write 75 in binary: 01001011 (64 + 8 + 2 + 1).</li>
+  <li><strong>Hexadecimal:</strong> Base-16 notation (0-9, then A-F representing 10-15). It serves as a human-friendly shorthand for binary strings (e.g., color codes).</li>
+  <li><strong>Character Encoding:</strong> Maps text to binary strings. <em>ASCII</em> (7-bit, handles 128 characters) and <em>Unicode</em> (16-32 bit, represents global scripts/emojis).</li>
+ </ul>
 
-<p><b>Algorithms</b><br>An algorithm is a clear, step‑by‑step method for solving a problem or completing a task. It must be written in a way that leaves no confusion.</p>
+ <h3>2. Computational Thinking & Algorithms</h3>
+ <p>Logic requires systematic strategies to find and organize data:</p>
+ <ul>
+  <li><strong>Linear Search:</strong> Inspects every list element in order. Best for unsorted datasets.</li>
+  <li><strong>Binary Search:</strong> Repeatedly splits a <em>sorted</em> dataset in half. Rapidly narrows searches.</li>
+  <li><strong>Bubble Sort:</strong> Moves through a list swapping adjacent items that are out of order. Inefficient for large datasets.</li>
+  <li><strong>Merge Sort:</strong> A divide-and-conquer approach. Splits lists into singular items, then merges them in order. Highly efficient.</li>
+ </ul>
 
-<p><b>Variables</b><br>Variables are named storage locations in a program that hold information and can change during execution.</p>
+ <h3>3. Programming Concepts</h3>
+ <p>Constructs control execution flows:</p>
+ <ul>
+  <li><strong>Variables & Constants:</strong> Named storage locations. Constants do not change during runtime; variables can.</li>
+  <li><strong>Selection:</strong> Directs pathways using IF, ELSE IF, and ELSE decisions.</li>
+  <li><strong>Iteration:</strong> Loop execution. Can be <em>Count-controlled</em> (e.g., FOR loops) or <em>Condition-controlled</em> (e.g., WHILE loops).</li>
+  <li><strong>Data Types:</strong> Integers (whole numbers), Real/Float (decimals), Boolean (True/False), Character (single letter), and String (text chain).</li>
+ </ul>
 
-<p><b>Selection</b><br>Selection allows programs to make decisions using IF, ELSE IF, and ELSE statements.</p>
+ <h3>4. Hardware & Networks</h3>
+ <p>Physical elements enable software execution:</p>
+ <ul>
+  <li><strong>CPU Core:</strong> Performs fetch-decode-execute (FDE) cycles. Divided into the ALU (calculations), Control Unit (instructions), and Registers (rapid temporary storage).</li>
+  <li><strong>Memory types:</strong> RAM (volatile primary memory storing active processes) and ROM (non-volatile startup/boot instructions).</li>
+  <li><strong>Secondary Storage:</strong> Non-volatile backup storage. Divided into <em>Magnetic</em> (hard drives), <em>Solid State</em> (flash/SSD), and <em>Optical</em> (CD/DVD).</li>
+  <li><strong>TCP/IP Protocol Stack:</strong> Governs network data packaging across four distinct layers: Application, Transport, Internet, and Link.</li>
+ </ul>
 </div>
 
 <button class="startBtn" onclick='startQuiz([
-{q:"Binary uses which digits?",a:[["0 and 1",true],["1–9",false]]},
-{q:"What is an algorithm?",a:[["Step-by-step method",true],["Random process",false]]},
-{q:"What stores data in programs?",a:[["Variables",true],["CPU",false]]},
-{q:"Selection uses?",a:[["IF statements",true],["Loops only",false]]}
+{q:"What is the 8-bit binary representation of denary 75?",a:[["01001011",true],["10110100",false]]},
+{q:"Which sorting algorithm divides a list repeatedly in half before merging?",a:[["Merge Sort",true],["Bubble Sort",false]]},
+{q:"In which hardware component does the Fetch-Decode-Execute cycle occur?",a:[["CPU",true],["RAM",false]]},
+{q:"Which layer of the TCP/IP protocol stack is responsible for packet routing?",a:[["Internet Layer",true],["Application Layer",false]]}
 ])'>Start Quiz</button>`;
 }
 
@@ -207,20 +347,65 @@ if(tab==="math"){
 content.innerHTML=`
 <h1>Maths</h1>
 <div class="card">
-<p><b>Fractions</b><br>Fractions represent parts of a whole and use a numerator and denominator.</p>
+ <h2>GCSE Syllabus Overview</h2>
+ <p>GCSE Mathematics develops numerical reasoning across arithmetic, algebraic expressions, geometric features, and statistical models.</p>
+ 
+ <h3>1. Number & Fractions</h3>
+ <p>Core arithmetic underpins mathematical structures:</p>
+ <ul>
+  <li><strong>Fraction Operations:</strong> 
+   <ul>
+    <li><em>Addition/Subtraction:</em> Convert to a common denominator first: 1/4 + 1/3 = 3/12 + 4/12 = 7/12.</li>
+    <li><em>Multiplication:</em> Multiply across (numerator × numerator, denominator × denominator).</li>
+    <li><em>Division:</em> Flip the second fraction (reciprocal) and multiply (Keep, Change, Flip).</li>
+   </ul>
+  </li>
+  <li><strong>Percentages:</strong> Express a proportion out of 100. For percentage change, apply: <code>(Difference / Original) × 100</code>.</li>
+ </ul>
 
-<p><b>Solving Equations</b><br>Use inverse operations to isolate the variable while keeping balance.</p>
+ <h3>2. Algebra & Solving Equations</h3>
+ <p>Variables let us model patterns and solve unknown quantities:</p>
+ <ul>
+  <li><strong>Isolating Variables:</strong> Apply inverse operations systematically to both sides of the equals sign to keep the balance.</li>
+  <li><strong>Expanding Double Brackets:</strong> Expand (x + a)(x + b) to <code>x² + (a+b)x + ab</code>.</li>
+  <li><strong>Factorising Quadratics:</strong> Rewrite expressions as brackets by finding numbers that multiply to the constant term and add up to the middle coefficient.</li>
+  <li><strong>The Quadratic Formula:</strong> For <code>ax² + bx + c = 0</code>, solve using: <code>x = [-b ± √(b² - 4ac)] / 2a</code>.</li>
+ </ul>
 
-<p><b>Coordinates</b><br>Coordinates show positions using x and y values on a grid.</p>
+ <h3>3. Geometry & Trigonometry</h3>
+ <p>Formulas for shapes and angles:</p>
+ <ul>
+  <li><strong>Pythagoras' Theorem:</strong> Applies to right-angled triangles: <code>a² + b² = c²</code>, where c represents the longest side (hypotenuse).</li>
+  <li><strong>Trigonometry (SOH CAH TOA):</strong>
+   <ul>
+    <li><em>Sin(θ)</em> = Opposite / Hypotenuse</li>
+    <li><em>Cos(θ)</em> = Adjacent / Hypotenuse</li>
+    <li><em>Tan(θ)</em> = Opposite / Adjacent</li>
+   </ul>
+  </li>
+  <li><strong>Circle Formulas:</strong> Area = <code>πr²</code>. Circumference = <code>2πr</code> (or <code>πd</code>).</li>
+ </ul>
 
-<p><b>Percentages</b><br>Percentages show values out of 100.</p>
+ <h3>4. Statistics & Probability</h3>
+ <p>Evaluating datasets and outcomes:</p>
+ <ul>
+  <li><strong>Averages & Range:</strong> 
+   <ul>
+    <li><em>Mean:</em> Total sum divided by count of items.</li>
+    <li><em>Median:</em> Middle value when ordered.</li>
+    <li><em>Mode:</em> Most common value.</li>
+    <li><em>Range:</em> Highest value minus lowest value.</li>
+   </ul>
+  </li>
+  <li><strong>Probability:</strong> Always ranges between 0 (impossible) and 1 (certain). Independent combined probabilities multiply together: <code>P(A and B) = P(A) × P(B)</code>.</li>
+ </ul>
 </div>
 
 <button class="startBtn" onclick='startQuiz([
-{q:"Fractions represent?",a:[["Parts of a whole",true],["Whole numbers only",false]]},
-{q:"Solve equations using?",a:[["Inverse operations",true],["Guessing",false]]},
-{q:"Coordinates show?",a:[["Position",true],["Colour",false]]},
-{q:"Percent means?",a:[["Out of 100",true],["Out of 10",false]]}
+{q:"Calculate 1/4 + 1/3:",a:[["7/12",true],["2/7",false]]},
+{q:"What is Pythagoras\' Theorem?",a:[["a² + b² = c²",true],["a + b = c",false]]},
+{q:"What is the formula for the Area of a Circle?",a:[["πr²",true],["2πr",false]]},
+{q:"How do you divide fractions?",a:[["Flip second fraction & multiply",true],["Cross multiply denominators",false]]}
 ])'>Start Quiz</button>`;
 }
 
@@ -229,20 +414,51 @@ if(tab==="bio"){
 content.innerHTML=`
 <h1>Biology</h1>
 <div class="card">
-<p><b>Cells</b><br>Cells are the basic building blocks of all living organisms.</p>
+ <h2>GCSE Syllabus Overview</h2>
+ <p>GCSE Biology explores life at every scale, from tiny cellular processes to complex bodily systems and ecosystems.</p>
+ 
+ <h3>1. Cell Biology & Specialisation</h3>
+ <p>Cells serve as the fundamental structural units of all life:</p>
+ <ul>
+  <li><strong>Eukaryotic Cells:</strong> Present in plants and animals. Contain genetic material enclosed within a membrane-bound nucleus, alongside organelles like mitochondria and ribosomes.</li>
+  <li><strong>Prokaryotic Cells:</strong> Simple bacterial cells. Much smaller and lack a nucleus; DNA floats freely in plasmids or loop structures.</li>
+  <li><strong>Specialised Cells:</strong> Form follows function.
+   <ul>
+    <li><em>Sperm cells:</em> Tail and streamlined head to swim, rich in mitochondria for energy.</li>
+    <li><em>Root hair cells:</em> Large surface area to maximize water and mineral absorption.</li>
+   </ul>
+  </li>
+ </ul>
 
-<p><b>Diffusion</b><br>Movement from high to low concentration without energy.</p>
+ <h3>2. Cellular Transport</h3>
+ <p>Substances cross membranes via three main processes:</p>
+ <ul>
+  <li><strong>Diffusion:</strong> Net movement of particles from an area of higher concentration to lower concentration. It is passive (requires no energy).</li>
+  <li><strong>Osmosis:</strong> Diffusion of water molecules from a dilute solution to a concentrated solution across a partially permeable membrane. Passive.</li>
+  <li><strong>Active Transport:</strong> Movement of substances against a concentration gradient (low to high). Requires cellular energy (ATP) produced during respiration.</li>
+ </ul>
 
-<p><b>Osmosis</b><br>Movement of water across a partially permeable membrane.</p>
+ <h3>3. Infection, Response & Defences</h3>
+ <p>How the body fights pathogens:</p>
+ <ul>
+  <li><strong>Pathogens:</strong> Microorganisms that cause infectious diseases (Bacteria, Viruses, Protists, Fungi).</li>
+  <li><strong>Non-Specific Defences:</strong> The skin (physical barrier), stomach acid (destroys pathogens), mucus and cilia in respiratory pathways.</li>
+  <li><strong>Immune Response:</strong> White blood cells defend the body by engulfing pathogens (phagocytosis), producing antibodies, and releasing antitoxins.</li>
+ </ul>
 
-<p><b>Enzymes</b><br>Enzymes speed up chemical reactions.</p>
+ <h3>4. Bioenergetics</h3>
+ <p>Chemical processes that sustain life:</p>
+ <ul>
+  <li><strong>Photosynthesis:</strong> Carbon Dioxide + Water + Light energy → Glucose + Oxygen. This endothermic reaction happens inside plant chloroplasts.</li>
+  <li><strong>Respiration:</strong> Exothermic reaction occurring inside cells to release energy. Aerobic respiration uses oxygen: <code>Glucose + Oxygen → Carbon Dioxide + Water</code>. Anaerobic respiration occurs without oxygen, producing lactic acid in animals.</li>
+ </ul>
 </div>
 
 <button class="startBtn" onclick='startQuiz([
-{q:"Cells are?",a:[["Basic units of life",true],["Energy packets",false]]},
-{q:"Diffusion moves?",a:[["High to low",true],["Low to high",false]]},
-{q:"Osmosis moves?",a:[["Water",true],["Oxygen",false]]},
-{q:"Enzymes do?",a:[["Speed reactions",true],["Slow reactions",false]]}
+{q:"Which cell type lacks a membrane-bound nucleus?",a:[["Prokaryotic Cells",true],["Eukaryotic Cells",false]]},
+{q:"Which transport process moves molecules from a low to high concentration using ATP energy?",a:[["Active Transport",true],["Diffusion",false]]},
+{q:"Where inside plant cells does photosynthesis take place?",a:[["Chloroplasts",true],["Mitochondria",false]]},
+{q:"What do white blood cells produce to neutralize toxins produced by pathogens?",a:[["Antitoxins",true],["Antibodies",false]]}
 ])'>Start Quiz</button>`;
 }
 
@@ -251,20 +467,48 @@ if(tab==="eng"){
 content.innerHTML=`
 <h1>English</h1>
 <div class="card">
-<p><b>Nouns</b><br>Nouns name people, places, objects, or ideas.</p>
+ <h2>GCSE Syllabus Overview</h2>
+ <p>GCSE English develops critical reading, language analysis, and structured creative writing skills.</p>
+ 
+ <h3>1. Grammar, Syntax & Word Classes</h3>
+ <p>Understanding grammatical systems helps build successful analytical and writing skills:</p>
+ <ul>
+  <li><strong>Nouns:</strong> Name people, places, things, or ideas (e.g., table, courage).</li>
+  <li><strong>Verbs:</strong> Express actions, states, or occurrences (e.g., running, existed).</li>
+  <li><strong>Adjectives & Adverbs:</strong> Adjectives modify nouns (e.g., <em>bright</em> light); adverbs modify verbs, adjectives, or other adverbs (e.g., walked <em>slowly</em>).</li>
+  <li><strong>Prepositions:</strong> Describe relationships in time or space (e.g., <em>under</em>, <em>before</em>).</li>
+ </ul>
 
-<p><b>Similes</b><br>Compare using like or as.</p>
+ <h3>2. Figurative Devices & Rhetoric</h3>
+ <p>Literary devices and writing tools used to influence readers:</p>
+ <ul>
+  <li><strong>Simile vs. Metaphor:</strong> Similes compare using "like" or "as" (e.g., *cold as ice*). Metaphors state a comparison directly (e.g., *she is a shining star*).</li>
+  <li><strong>Personification:</strong> Giving human traits to non-human things (e.g., *the wind whispered*).</li>
+  <li><strong>Pathetic Fallacy:</strong> Reflecting human emotions in nature or the weather (e.g., rain falling during a somber, emotional scene).</li>
+  <li><strong>Juxtaposition:</strong> Placing two opposing ideas side-by-side to create a strong contrast.</li>
+ </ul>
 
-<p><b>Themes</b><br>Deeper meanings in a story.</p>
+ <h3>3. Structural Choices & Narratives</h3>
+ <p>How writers structure their stories for maximum impact:</p>
+ <ul>
+  <li><strong>Freytag's Pyramid:</strong> A framework tracking standard plot progress: Exposition, Inciting Incident, Rising Action, Climax, Falling Action, and Resolution.</li>
+  <li><strong>Perspective:</strong> First-person (uses "I", brings intimacy and potential bias) and Third-person (uses "he/she/they", offers a broader, more objective overview).</li>
+  <li><strong>Syntactical Structure:</strong> Varying sentence lengths to control reading speed. Short, simple sentences build tension; long, complex sentences slow down the pace to describe scenes in detail.</li>
+ </ul>
 
-<p><b>Narrative Structure</b><br>Beginning, middle, climax, and resolution.</p>
+ <h3>4. Context & Themes</h3>
+ <p>Analyzing historical context helps you understand a writer's underlying message:</p>
+ <ul>
+  <li><strong>Context:</strong> The social, historical, and political backdrop of when a text was written (e.g., analyzing how Victorian class struggles shaped Charles Dickens' novels).</li>
+  <li><strong>Themes:</strong> Deep recurring ideas in a literary work (e.g., power, conflict, love, transformation, guilt).</li>
+ </ul>
 </div>
 
 <button class="startBtn" onclick='startQuiz([
-{q:"Nouns are?",a:[["Naming words",true],["Action words",false]]},
-{q:"Similes use?",a:[["Like/as",true],["Is",false]]},
-{q:"Themes are?",a:[["Deeper ideas",true],["Titles",false]]},
-{q:"Structure includes?",a:[["Climax",true],["Alphabet",false]]}
+{q:"What device attributes human emotions to nature or the weather?",a:[["Pathetic Fallacy",true],["Personification",false]]},
+{q:"Which part of Freytag\'s Pyramid represents the turning point or peak of tension?",a:[["Climax",true],["Exposition",false]]},
+{q:"What word class modifies a noun?",a:[["Adjective",true],["Adverb",false]]},
+{q:"A comparison using \'like\' or \'as\' is a:",a:[["Simile",true],["Metaphor",false]]}
 ])'>Start Quiz</button>`;
 }
 
@@ -273,35 +517,130 @@ if(tab==="bus"){
 content.innerHTML=`
 <h1>Business</h1>
 <div class="card">
-<p><b>Entrepreneurs</b><br>People who start and run businesses.</p>
+ <h2>GCSE Syllabus Overview</h2>
+ <p>GCSE Business explores how enterprises identify demand, organize production, manage finance, and adapt to competitive markets.</p>
+ 
+ <h3>1. Enterprise & Entrepreneurship</h3>
+ <p>The launch and running of new business ventures:</p>
+ <ul>
+  <li><strong>Entrepreneurs:</strong> People who spot market opportunities, take calculated risks, and coordinate production resources to start a business.</li>
+  <li><strong>Business Plans:</strong> Document outlining goals, operational structures, target markets, and cash flow forecasts. Helps secure loans and reduce risks.</li>
+  <li><strong>Business Objectives:</strong> Standard targets include survival, profit maximization, market share growth, and social responsibility.</li>
+ </ul>
 
-<p><b>Revenue</b><br>Total money earned before costs.</p>
+ <h3>2. Finance & Break-Even Analysis</h3>
+ <p>Formulas for managing money and tracking performance:</p>
+ <ul>
+  <li><strong>Revenue:</strong> Money earned from sales before any costs are subtracted: <code>Revenue = Price × Quantity Sold</code>.</li>
+  <li><strong>Costs:</strong> 
+   <ul>
+    <li><em>Fixed Costs (FC):</em> Do not change with output level (e.g., rent, insurance).</li>
+    <li><em>Variable Costs (VC):</em> Change directly with output (e.g., raw materials).</li>
+    <li><em>Total Costs:</em> <code>TC = Fixed Costs + Variable Costs</code>.</li>
+   </ul>
+  </li>
+  <li><strong>Profit:</strong> <code>Profit = Revenue - Total Costs</code>. Positive value is profit; negative is a loss.</li>
+  <li><strong>Break-Even Point:</strong> The exact sales volume where total revenue equals total costs. Calculated as: <code>Fixed Costs / (Selling Price - Variable Cost per unit)</code>.</li>
+ </ul>
 
-<p><b>Profit</b><br>Revenue minus costs.</p>
+ <h3>3. Market Research & Marketing</h3>
+ <p>Identifying customer needs and developing a brand:</p>
+ <ul>
+  <li><strong>Data Collection:</strong> 
+   <ul>
+    <li><em>Primary Research:</em> Gathering first-hand data (e.g., surveys, focus groups). Tailored but expensive.</li>
+    <li><em>Secondary Research:</em> Using existing data (e.g., online reports, government statistics). Quick but may be outdated.</li>
+   </ul>
+  </li>
+  <li><strong>The 4 Ps of the Marketing Mix:</strong> 
+   <ul>
+    <li><em>Product:</em> Design, branding, and features.</li>
+    <li><em>Price:</em> Strategies to remain competitive (e.g., skimming, penetration pricing).</li>
+    <li><em>Place:</em> Channels used to distribute the product to the consumer.</li>
+    <li><em>Promotion:</em> Methods used to raise awareness (e.g., advertising, PR, sales promotions).</li>
+   </ul>
+  </li>
+ </ul>
 
-<p><b>Market Research</b><br>Collecting information about customers and markets.</p>
+ <h3>4. Business Operations</h3>
+ <p>Production strategies and quality standards:</p>
+ <ul>
+  <li><strong>Production Methods:</strong> 
+   <ul>
+    <li><em>Job Production:</em> Creating unique, custom items (e.g., wedding cakes). High cost, high quality.</li>
+    <li><em>Batch Production:</em> Making groups of identical items (e.g., bread loaves). Good balance of cost and flexibility.</li>
+    <li><em>Flow Production:</em> Continuous production of identical items on an assembly line (e.g., fizzy drink cans). Low cost per unit, expensive setup.</li>
+   </ul>
+  </li>
+  <li><strong>Quality Control vs. Quality Assurance:</strong> Quality Control is checking the final product for flaws at the end of the line. Quality Assurance is checking and building quality into every step of the production process to prevent defects.</li>
+ </ul>
 </div>
 
 <button class="startBtn" onclick='startQuiz([
-{q:"Entrepreneurs do?",a:[["Start businesses",true],["Spend money",false]]},
-{q:"Revenue is?",a:[["Total income",true],["Profit",false]]},
-{q:"Profit equals?",a:[["Revenue - costs",true],["Costs - revenue",false]]},
-{q:"Market research?",a:[["Collect info",true],["Ignore data",false]]}
+{q:"Which costs change directly in line with business production levels?",a:[["Variable Costs",true],["Fixed Costs",false]]},
+{q:"What is the formula for calculating Total Costs?",a:[["Fixed Costs + Variable Costs",true],["Fixed Costs × Variable Costs",false]]},
+{q:"What type of production creates unique, custom products to order?",a:[["Job Production",true],["Batch Production",false]]},
+{q:"Which of the 4 Ps involves pricing strategies like skimming or penetration?",a:[["Price",true],["Product",false]]}
 ])'>Start Quiz</button>`;
 }
+
+/* AI TUTOR */
+if(tab==="ai"){
+ const savedKey = localStorage.getItem("gemini_api_key") || "";
+ content.innerHTML = `
+ <h1>AI Tutor</h1>
+ <div class="card">
+  <p>Ask our Gemini-powered AI Tutor any GCSE question. Your API key will be stored securely on your local device.</p>
+  
+  <label style="display:block; font-weight:600; margin-bottom: 5px;">Gemini API Key:</label>
+  <input type="password" id="apiKey" placeholder="Enter your Gemini API key" value="${savedKey}" style="margin-bottom:15px;">
+  
+  <label style="display:block; font-weight:600; margin-bottom: 5px;">Your GCSE Question:</label>
+  <textarea id="aiPrompt" placeholder="e.g., Explain mitosis simply, or how do I calculate the area of a circle?" rows="4" style="margin-bottom:15px; resize:vertical;"></textarea>
+  
+  <button class="startBtn" onclick="askAI()">Ask Tutor</button>
+ </div>
+ 
+ <div class="card" style="min-height: 100px;">
+  <h3 style="margin-top:0;">Response:</h3>
+  <div id="aiResponse" style="line-height:1.6;">Your answer will appear here...</div>
+ </div>
+ `;
+}
+
 }
 
 function toggleMode(){
- document.body.classList.toggle("dark");
+ const isDark = document.body.classList.toggle("dark");
+ localStorage.setItem("dark_mode", isDark ? "enabled" : "disabled");
 }
 
 document.addEventListener("keydown", e=>{
+ // Ignore shortcuts if typing inside input boxes or textareas
+ if(e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable) {
+   return;
+ }
+ 
  let k=e.key.toLowerCase();
- if(e.shiftKey && k==="x") playMusic("music1.mp3");
- if(e.shiftKey && k==="z") playMusic("music2.mp3");
- if(e.shiftKey && k==="c") playMusic("music3.mp3");
- if(e.shiftKey && k==="v") playMusic("music4.mp3");
- if(e.shiftKey && k==="b") playMusic("music5.mp3");
+ 
+ /* Secret Stealth Unlock Hotkey (Ctrl + Shift + Alt + A) */
+ if(e.ctrlKey && e.shiftKey && e.altKey && k === "a"){
+   audioUnlocked = !audioUnlocked;
+   return;
+ }
+ 
+ /* Audio Playback (Ignored completely unless master unlocked is toggled) */
+ if(!audioUnlocked) return;
+ 
+ if (e.shiftKey && k==="x") playMusic("music1.mp3");
+ if (e.shiftKey && k==="z") playMusic("music2.mp3");
+ if (e.shiftKey && k==="c") playMusic("music3.mp3");
+ if (e.shiftKey && k==="v") playMusic("music4.mp3");
+ if (e.shiftKey && k==="b") playMusic("music5.mp3");
+ if (e.shiftKey && k==="n") playMusic("music6.mp3");
+ if (e.shiftKey && k==="m") playMusic("music7.mp3");
+ if (e.shiftKey && k==="k") playMusic("music8.mp3");
+ if (e.shiftKey && k==="l") playMusic("music9.mp3");
 });
 
 switchTab({target:document.querySelector("nav a")},"cs");
